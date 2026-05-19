@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "365767152501",
+    "project_id": "athar-app-384b5",
+    "storage_bucket": "athar-app-384b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:365767152501:android:71ef01eebd93b6e8fff93c",
+        "android_client_info": {
+          "package_name": "com.athar.athar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiQXM1aejBoZANv1IVr9FkJti-FyRwPHI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

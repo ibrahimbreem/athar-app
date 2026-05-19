@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "athar-app-384b5",
+          "appId": "1:365767152501:android:71ef01eebd93b6e8fff93c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "athar-app-384b5",
+          "configurations": {
+            "android": "1:365767152501:android:71ef01eebd93b6e8fff93c",
+            "ios": "1:365767152501:ios:37c6385762378b9bfff93c",
+            "macos": "1:365767152501:ios:37c6385762378b9bfff93c",
+            "web": "1:365767152501:web:1a395f5a56cc0d6ffff93c",
+            "windows": "1:365767152501:web:ea5a8fb711694036fff93c"
+          }
+        }
+      }
+    }
+  }
+}

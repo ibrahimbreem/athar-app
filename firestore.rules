@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users: each user can read/write their own document only
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Cases: authenticated users can read all cases
+    // Only the owner (needyUserId) can create/update/delete
+    match /cases/{caseId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.needyUserId == request.auth.uid;
+      allow update, delete: if request.auth != null
+                             && resource.data.needyUserId == request.auth.uid;
+    }
+
+    // Notifications: users can read/write their own notifications
+    match /notifications/{notifId} {
+      allow read, write: if request.auth != null
+                         && (resource == null || resource.data.userId == request.auth.uid)
+                         && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+    }
+
+    // Follows: donors can create, orgs can read/update their received requests
+    match /follows/{followId} {
+      allow read: if request.auth != null
+                  && (resource.data.donorId == request.auth.uid
+                      || resource.data.organizationId == request.auth.uid);
+      allow create: if request.auth != null;
+      allow update: if request.auth != null
+                    && resource.data.organizationId == request.auth.uid;
+    }
+  }
+}
