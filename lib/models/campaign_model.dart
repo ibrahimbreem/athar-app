@@ -83,6 +83,14 @@ class CampaignModel extends Equatable {
   final KafalaType? kafalaType;
   final String? sponsorId;
   final String? sponsorName;
+  // ─── Financial fields ─────────────────────────────────────────
+  // Campaigns: goalAmount = target, collectedAmount = raised so far
+  // Kafala:    monthlyAmount = monthly sponsorship amount
+  final double? goalAmount;
+  final double collectedAmount;
+  final double? monthlyAmount;
+  // Organization display name (separate from needyName which is the person)
+  final String orgName;
 
   const CampaignModel({
     required this.id,
@@ -108,12 +116,15 @@ class CampaignModel extends Equatable {
     this.kafalaType,
     this.sponsorId,
     this.sponsorName,
+    this.goalAmount,
+    this.collectedAmount = 0,
+    this.monthlyAmount,
+    this.orgName = '',
   });
 
-  // Backward-compat getters
+  // ─── Getters ──────────────────────────────────────────────────
   String get organizationId => needyUserId;
-  String get organizationName => needyName;
-  String? get organizationLogoUrl => needyPhotoUrl;
+  String get organizationLogoUrl => needyPhotoUrl ?? '';
   bool get organizationVerified => isVerified;
   int get donorsCount => followersCount;
 
@@ -128,8 +139,22 @@ class CampaignModel extends Equatable {
   bool get isPending => status == CampaignStatus.pending;
   bool get isUrgent => urgencyLevel == UrgencyLevel.high;
 
-  double get progressPercentage =>
-      status == CampaignStatus.resolved ? 1.0 : (status == CampaignStatus.inProgress ? 0.5 : 0.1);
+  /// Real progress for campaigns; falls back to status-based value for old data.
+  double get progressPercentage {
+    if (!isKafala && goalAmount != null && goalAmount! > 0) {
+      return (collectedAmount / goalAmount!).clamp(0.0, 1.0);
+    }
+    switch (status) {
+      case CampaignStatus.resolved:
+        return 1.0;
+      case CampaignStatus.inProgress:
+        return 0.5;
+      default:
+        return 0.1;
+    }
+  }
+
+  int get progressPercent => (progressPercentage * 100).round();
 
   String get statusLabel {
     switch (status) {
@@ -220,13 +245,19 @@ class CampaignModel extends Equatable {
           .map((u) => CampaignUpdate.fromMap(u as Map<String, dynamic>))
           .toList(),
       followersCount: data['followersCount'] ?? data['donorsCount'] ?? 0,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt:
+          (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt:
+          (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       tags: List<String>.from(data['tags'] ?? []),
       personAge: data['personAge'],
       kafalaType: _kafalaTypeFromString(data['kafalaType']),
       sponsorId: data['sponsorId'],
       sponsorName: data['sponsorName'],
+      goalAmount: (data['goalAmount'] as num?)?.toDouble(),
+      collectedAmount: (data['collectedAmount'] as num?)?.toDouble() ?? 0,
+      monthlyAmount: (data['monthlyAmount'] as num?)?.toDouble(),
+      orgName: data['orgName'] ?? data['needyName'] ?? '',
     );
   }
 
@@ -254,6 +285,10 @@ class CampaignModel extends Equatable {
       'kafalaType': kafalaType?.name,
       'sponsorId': sponsorId,
       'sponsorName': sponsorName,
+      'goalAmount': goalAmount,
+      'collectedAmount': collectedAmount,
+      'monthlyAmount': monthlyAmount,
+      'orgName': orgName,
     };
   }
 
@@ -281,6 +316,10 @@ class CampaignModel extends Equatable {
     KafalaType? kafalaType,
     String? sponsorId,
     String? sponsorName,
+    double? goalAmount,
+    double? collectedAmount,
+    double? monthlyAmount,
+    String? orgName,
   }) {
     return CampaignModel(
       id: id ?? this.id,
@@ -306,6 +345,10 @@ class CampaignModel extends Equatable {
       kafalaType: kafalaType ?? this.kafalaType,
       sponsorId: sponsorId ?? this.sponsorId,
       sponsorName: sponsorName ?? this.sponsorName,
+      goalAmount: goalAmount ?? this.goalAmount,
+      collectedAmount: collectedAmount ?? this.collectedAmount,
+      monthlyAmount: monthlyAmount ?? this.monthlyAmount,
+      orgName: orgName ?? this.orgName,
     );
   }
 
@@ -341,5 +384,13 @@ class CampaignModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, title, status, followersCount, kafalaType];
+  List<Object?> get props => [
+        id,
+        title,
+        status,
+        followersCount,
+        kafalaType,
+        collectedAmount,
+        monthlyAmount,
+      ];
 }

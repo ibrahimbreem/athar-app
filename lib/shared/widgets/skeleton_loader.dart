@@ -40,50 +40,40 @@ class CampaignCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.white,
-        borderRadius: BorderRadius.circular(AppSizes.r20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? const Color(0xFF2D3748) : AppColors.grey100,
         ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          SkeletonBox(width: double.infinity, height: 160, borderRadius: 0),
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.p16),
+          const SkeletonBox(width: 86, height: 86, borderRadius: 12),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  const SkeletonBox(width: 24, height: 24, borderRadius: 12),
-                  const SizedBox(width: 8),
-                  SkeletonBox(
-                      width: MediaQuery.of(context).size.width * 0.4,
-                      height: 12),
-                ]),
-                const SizedBox(height: 10),
-                const SkeletonBox(width: double.infinity, height: 16),
+                const SkeletonBox(width: double.infinity, height: 14),
                 const SizedBox(height: 6),
                 SkeletonBox(
-                    width: MediaQuery.of(context).size.width * 0.6,
-                    height: 14),
-                const SizedBox(height: 14),
-                const SkeletonBox(width: double.infinity, height: 6),
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    height: 12),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    SkeletonBox(width: 50, height: 30),
-                    SkeletonBox(width: 50, height: 30),
-                    SkeletonBox(width: 60, height: 30),
+                    SkeletonBox(width: 60, height: 22, borderRadius: 10),
+                    SizedBox(width: 8),
+                    SkeletonBox(width: 50, height: 12),
                   ],
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          const SkeletonBox(width: 58, height: 58, borderRadius: 29),
         ],
       ),
     );

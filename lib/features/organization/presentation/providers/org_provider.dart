@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../models/campaign_model.dart';
+import '../../../../models/donation_record_model.dart';
 import '../../../../models/donor_request_model.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../../services/storage_service.dart';
@@ -86,6 +87,8 @@ class CampaignFormNotifier extends StateNotifier<CampaignFormState> {
     KafalaType? kafalaType,
     int? personAge,
     String? personName,
+    double? goalAmount,
+    double? monthlyAmount,
   }) async {
     state = state.copyWith(isLoading: true);
     try {
@@ -109,7 +112,8 @@ class CampaignFormNotifier extends StateNotifier<CampaignFormState> {
       final campaign = CampaignModel(
         id: '',
         needyUserId: user.id,
-        // For kafala, use the person's name; otherwise use org name
+        orgName: user.displayName,
+        // For kafala, needyName is the person; for campaigns it's the org
         needyName: (isKafala && personName != null && personName.trim().isNotEmpty)
             ? personName.trim()
             : user.displayName,
@@ -125,6 +129,8 @@ class CampaignFormNotifier extends StateNotifier<CampaignFormState> {
         status: initialStatus,
         kafalaType: kafalaType,
         personAge: personAge,
+        goalAmount: goalAmount,
+        monthlyAmount: monthlyAmount,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -184,6 +190,90 @@ class CampaignFormNotifier extends StateNotifier<CampaignFormState> {
   }
 
   void reset() => state = const CampaignFormState();
+}
+
+// ─── Record Donation / Kafala Payment ────────────────────────────────────────
+
+final recordDonationProvider =
+    StateNotifierProvider<RecordDonationNotifier, AsyncValue<void>>(
+  (ref) => RecordDonationNotifier(ref),
+);
+
+class RecordDonationNotifier extends StateNotifier<AsyncValue<void>> {
+  RecordDonationNotifier(this._ref) : super(const AsyncValue.data(null));
+  final Ref _ref;
+
+  /// Records a campaign donation (increments collectedAmount).
+  Future<bool> recordCampaignDonation({
+    required CampaignModel campaign,
+    required String donorName,
+    required double amount,
+    String? note,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final org = _ref.read(currentUserProvider);
+      if (org == null) throw Exception('غير مسجل الدخول');
+
+      final record = DonationRecord(
+        id: '',
+        type: DonationType.campaign,
+        campaignId: campaign.id,
+        campaignTitle: campaign.title,
+        needyName: campaign.needyName,
+        donorId: '',
+        donorName: donorName,
+        organizationId: org.id,
+        orgName: org.displayName,
+        amount: amount,
+        createdAt: DateTime.now(),
+        note: note,
+      );
+
+      await _firestore.recordDonation(record);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, s) {
+      state = AsyncValue.error(e, s);
+      return false;
+    }
+  }
+
+  /// Records a kafala monthly payment and notifies the sponsor.
+  Future<bool> recordKafalaPayment({
+    required CampaignModel campaign,
+    required double amount,
+    String? note,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final org = _ref.read(currentUserProvider);
+      if (org == null) throw Exception('غير مسجل الدخول');
+      if (campaign.sponsorId == null) throw Exception('لا يوجد كفيل مرتبط');
+
+      final record = DonationRecord(
+        id: '',
+        type: DonationType.kafala,
+        campaignId: campaign.id,
+        campaignTitle: campaign.title,
+        needyName: campaign.needyName,
+        donorId: campaign.sponsorId!,
+        donorName: campaign.sponsorName ?? '',
+        organizationId: org.id,
+        orgName: org.displayName,
+        amount: amount,
+        createdAt: DateTime.now(),
+        note: note,
+      );
+
+      await _firestore.recordKafalaPayment(record);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, s) {
+      state = AsyncValue.error(e, s);
+      return false;
+    }
+  }
 }
 
 // ─── Follow Request Actions ───────────────────────────────────────────────────

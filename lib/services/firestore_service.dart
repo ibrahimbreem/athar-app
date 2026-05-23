@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/campaign_model.dart';
+import '../models/donation_record_model.dart';
 import '../models/notification_model.dart';
 import '../models/donor_request_model.dart';
 import '../models/user_model.dart';
@@ -16,6 +17,7 @@ class FirestoreService {
   CollectionReference get _cases => _db.collection('cases');
   CollectionReference get _notifications => _db.collection('notifications');
   CollectionReference get _follows => _db.collection('follows');
+  CollectionReference get _donations => _db.collection('donations');
 
   // ─── Cases ───────────────────────────────────────────────────────────────
 
@@ -196,6 +198,33 @@ class FirestoreService {
     await _notifications.add(notification.toFirestore());
   }
 
+  Future<void> sendInAppNotification({
+    required String userId,
+    required String title,
+    required String body,
+    required NotificationType type,
+    String? campaignId,
+    String? requestId,
+  }) async {
+    final notif = NotificationModel(
+      id: '',
+      userId: userId,
+      title: title,
+      body: body,
+      type: type,
+      campaignId: campaignId,
+      requestId: requestId,
+      createdAt: DateTime.now(),
+    );
+    await _notifications.add(notif.toFirestore());
+  }
+
+  Future<void> incrementFollowersCount(String campaignId) async {
+    await _cases.doc(campaignId).update({
+      'followersCount': FieldValue.increment(1),
+    });
+  }
+
   // ─── Follows (replaces donor_requests) ───────────────────────────────────
 
   Future<String> createDonorRequest(DonorRequestModel request) async {
@@ -262,6 +291,53 @@ class FirestoreService {
       'pending': pending,
       'pendingRequests': pendingFollows.docs.length,
     };
+  }
+
+  // ─── Donations & Kafala Payments ─────────────────────────────────────────
+
+  /// Records a campaign donation: saves to donations collection + increments collectedAmount.
+  Future<void> recordDonation(DonationRecord record) async {
+    final batch = _db.batch();
+
+    final donationRef = _donations.doc();
+    batch.set(donationRef, record.toFirestore());
+
+    final caseRef = _cases.doc(record.campaignId);
+    batch.update(caseRef, {
+      'collectedAmount': FieldValue.increment(record.amount),
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+
+    await batch.commit();
+  }
+
+  /// Records a kafala monthly payment: saves record + sends in-app notification to donor.
+  Future<void> recordKafalaPayment(DonationRecord record) async {
+    final batch = _db.batch();
+
+    final donationRef = _donations.doc();
+    batch.set(donationRef, record.toFirestore());
+
+    await batch.commit();
+
+    await sendInAppNotification(
+      userId: record.donorId,
+      title: 'تم تسجيل دفعة كفالة ✅',
+      body:
+          'تم تسجيل تبرعك بمبلغ ${record.amount.toStringAsFixed(0)} ريال لكفالة "${record.needyName ?? record.campaignTitle}" - ${record.orgName}',
+      type: NotificationType.general,
+      campaignId: record.campaignId,
+    );
+  }
+
+  /// Stream of all donation records for a specific donor (campaigns + kafala).
+  Stream<List<DonationRecord>> getDonorDonations(String donorId) {
+    return _donations
+        .where('donorId', isEqualTo: donorId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => DonationRecord.fromFirestore(d)).toList());
   }
 
   // ─── User Profile ─────────────────────────────────────────────────────────

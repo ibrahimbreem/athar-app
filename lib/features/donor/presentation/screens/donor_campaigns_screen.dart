@@ -33,20 +33,24 @@ class _DonorCampaignsScreenState extends ConsumerState<DonorCampaignsScreen> {
   Widget build(BuildContext context) {
     final all = ref.watch(allActiveCampaignsProvider);
     final actions = ref.watch(campaignActionsProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor:
+          isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF8FAF8),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
+            backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 1,
+            shadowColor: Colors.black.withValues(alpha: 0.08),
             title: const Text(
               AppStrings.campaigns,
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
             centerTitle: true,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
           ),
 
           // Category filter chips

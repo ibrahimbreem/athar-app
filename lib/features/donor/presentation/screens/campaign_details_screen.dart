@@ -31,14 +31,17 @@ class CampaignDetailsScreen extends ConsumerWidget {
           );
         }
         final isSaved = actions.isSaved(campaign.id);
+        final isFollowing =
+            user?.followedCases.contains(campaign.id) ?? false;
 
         return Scaffold(
           body: CustomScrollView(
             slivers: [
-              // ─── Hero Image ─────────────────────────────────────
+              // ─── Hero Image ──────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 280,
+                expandedHeight: 260,
                 pinned: true,
+                backgroundColor: Colors.transparent,
                 leading: GestureDetector(
                   onTap: () => context.pop(),
                   child: Container(
@@ -48,7 +51,7 @@ class CampaignDetailsScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 8,
                         ),
                       ],
@@ -57,6 +60,17 @@ class CampaignDetailsScreen extends ConsumerWidget {
                         size: 18, color: Colors.black87),
                   ),
                 ),
+                title: const Text(
+                  'تفاصيل الحالة',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    shadows: [
+                      Shadow(color: Colors.black54, blurRadius: 8),
+                    ],
+                  ),
+                ),
+                centerTitle: true,
                 actions: [
                   GestureDetector(
                     onTap: () => actions.toggleSave(campaign.id),
@@ -68,7 +82,7 @@ class CampaignDetailsScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 8,
                           ),
                         ],
@@ -76,7 +90,8 @@ class CampaignDetailsScreen extends ConsumerWidget {
                       child: Icon(
                         isSaved ? Icons.bookmark : Icons.bookmark_border,
                         size: 20,
-                        color: isSaved ? AppColors.primary : Colors.black87,
+                        color:
+                            isSaved ? AppColors.primary : Colors.black87,
                       ),
                     ),
                   ),
@@ -85,14 +100,15 @@ class CampaignDetailsScreen extends ConsumerWidget {
                       'تعرف على حالة "${campaign.title}" على منصة أثر',
                     ),
                     child: Container(
-                      margin: const EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                      margin: const EdgeInsets.only(
+                          left: 8, top: 8, bottom: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 8,
                           ),
                         ],
@@ -126,7 +142,7 @@ class CampaignDetailsScreen extends ConsumerWidget {
                             child: Icon(
                               Icons.cases_rounded,
                               size: 80,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                           ),
                         ),
@@ -140,11 +156,12 @@ class CampaignDetailsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Needy person row
+                      // Name + age + type
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CircleAvatar(
-                            radius: 18,
+                            radius: 24,
                             backgroundColor: AppColors.primaryContainer,
                             backgroundImage: campaign.needyPhotoUrl != null
                                 ? CachedNetworkImageProvider(
@@ -156,125 +173,194 @@ class CampaignDetailsScreen extends ConsumerWidget {
                                         ? campaign.needyName[0]
                                         : 'م',
                                     style: const TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold),
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
                                   )
                                 : null,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              campaign.needyName,
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                          ),
-                          if (campaign.isVerified)
-                            Row(
-                              children: const [
-                                Icon(Icons.verified,
-                                    size: 16, color: AppColors.primary),
-                                SizedBox(width: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  AppStrings.verified,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  campaign.needyName,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (campaign.kafalaType != null) ...[
+                                      Text(
+                                        campaign.kafalaTypeLabel,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.grey500,
+                                        ),
+                                      ),
+                                      if (campaign.personAge != null)
+                                        const Text(
+                                          ' • ',
+                                          style: TextStyle(
+                                              color: AppColors.grey400),
+                                        ),
+                                    ],
+                                    if (campaign.personAge != null)
+                                      Text(
+                                        '${campaign.personAge} سنوات',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.grey500,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
                             ),
-                          const SizedBox(width: 8),
-                          _UrgencyChip(level: campaign.urgencyLevel),
+                          ),
+                          _StatusChip(campaign: campaign),
                         ],
                       ),
-                      const SizedBox(height: 16),
 
-                      // Title
-                      Text(
-                        campaign.title,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ).animate().fadeIn().slideY(begin: 0.2),
-
-                      const SizedBox(height: 20),
-
-                      // Status Card
-                      _StatusCard(campaign: campaign),
-
-                      const SizedBox(height: 24),
-
-                      // Description
-                      Text(
-                        'عن الحالة',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        campaign.description,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              height: 1.8,
-                            ),
-                      ),
-
-                      // Needs
-                      if (campaign.needs != null) ...[
-                        const SizedBox(height: 20),
-                        Text(
-                          AppStrings.caseNeeds,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 8),
+                      // ─── "أنت تكفل هذا" banner ────────────────────
+                      if (isFollowing) ...[
+                        const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: AppColors.primaryContainer,
                             borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.favorite_rounded,
+                                  color: AppColors.primary, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      campaign.isKafala
+                                          ? 'أنت تكفل هذا الطفل'
+                                          : 'أنت تتابع هذه الحالة',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primaryDark,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'شكراً لك، دعمك يصنع فرقاً في حياته',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      // ─── Info Card ────────────────────────────────
+                      _InfoCard(campaign: campaign),
+
+                      const SizedBox(height: 20),
+
+                      // ─── Description ─────────────────────────────
+                      Text(
+                        'عن الحالة',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        campaign.description,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(height: 1.8, color: AppColors.grey600),
+                      ),
+
+                      // ─── Needs ───────────────────────────────────
+                      if (campaign.needs != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          AppStrings.caseNeeds,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             campaign.needs!,
-                            style: Theme.of(context).textTheme.bodyMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
                                 ?.copyWith(height: 1.6),
                           ),
                         ),
                       ],
 
-                      // Info rows
-                      const SizedBox(height: 16),
-                      if (campaign.location != null)
-                        _InfoRow(
-                          icon: Icons.location_on_outlined,
-                          label: AppStrings.caseLocation,
-                          value: campaign.location!,
-                        ),
-                      _InfoRow(
-                        icon: Icons.people_outline,
-                        label: 'المتابعون',
-                        value: '${campaign.followersCount} متابع',
-                      ),
-                      _InfoRow(
-                        icon: Icons.category_outlined,
-                        label: 'التصنيف',
-                        value: campaign.categoryLabel,
-                      ),
-
-                      // Updates timeline
+                      // ─── Updates Timeline ─────────────────────────
                       if (campaign.updates.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        Text(
-                          AppStrings.caseUpdates,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppStrings.caseUpdates,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryContainer,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${campaign.updates.length} تحديث',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
-                        ...campaign.updates.map((u) => _UpdateItem(update: u)),
+                        ...campaign.updates
+                            .map((u) => _UpdateItem(update: u)),
                       ],
 
                       const SizedBox(height: 100),
@@ -288,26 +374,34 @@ class CampaignDetailsScreen extends ConsumerWidget {
               ? SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppButton(
-                          label: AppStrings.followCase,
-                          onPressed: campaign.isCompleted
-                              ? null
-                              : () => context.push(
-                                  '/campaign/${campaign.id}/intent'),
-                          icon: Icons.favorite_outline_rounded,
-                        ),
-                        const SizedBox(height: 10),
-                        AppButton(
-                          label: AppStrings.contactNeedy,
-                          onPressed: () {},
-                          variant: ButtonVariant.outlined,
-                          icon: Icons.chat_bubble_outline_rounded,
-                        ),
-                      ],
-                    ),
+                    child: isFollowing
+                        ? AppButton(
+                            label: 'إرسال رسالة',
+                            onPressed: () {},
+                            icon: Icons.chat_bubble_outline_rounded,
+                          )
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppButton(
+                                label: campaign.isKafala
+                                    ? AppStrings.sponsorNow
+                                    : AppStrings.followCase,
+                                onPressed: campaign.isCompleted
+                                    ? null
+                                    : () => context.push(
+                                        '/campaign/${campaign.id}/intent'),
+                                icon: Icons.favorite_outline_rounded,
+                              ),
+                              const SizedBox(height: 10),
+                              AppButton(
+                                label: AppStrings.contactNeedy,
+                                onPressed: () {},
+                                variant: ButtonVariant.outlined,
+                                icon: Icons.chat_bubble_outline_rounded,
+                              ),
+                            ],
+                          ),
                   ),
                 )
               : null,
@@ -325,8 +419,10 @@ class CampaignDetailsScreen extends ConsumerWidget {
   }
 }
 
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.campaign});
+// ─── Info Card ─────────────────────────────────────────────────────────────
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.campaign});
   final CampaignModel campaign;
 
   @override
@@ -334,157 +430,115 @@ class _StatusCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    Color statusColor;
-    switch (campaign.status) {
-      case CampaignStatus.verified:
-        statusColor = AppColors.primary;
-        break;
-      case CampaignStatus.inProgress:
-        statusColor = AppColors.info;
-        break;
-      case CampaignStatus.resolved:
-        statusColor = AppColors.success;
-        break;
-      default:
-        statusColor = AppColors.warning;
-    }
+    final rows = <(IconData, String, String)>[
+      if (campaign.location != null)
+        (Icons.location_on_outlined, 'الموقع', campaign.location!),
+      if (campaign.kafalaType != null)
+        (Icons.category_outlined, 'نوع الحالة', campaign.kafalaTypeLabel),
+      (Icons.people_outline, 'المتابعون',
+          '${campaign.followersCount} متابع'),
+      (Icons.flag_outlined, 'الحالة', campaign.statusLabel),
+    ];
 
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: isDark ? const Color(0xFF2D3748) : AppColors.grey100),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.07),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.info_outline_rounded, color: statusColor, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'حالة الطلب',
-                  style: theme.textTheme.bodySmall,
-                ),
-                Text(
-                  campaign.statusLabel,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Icon(Icons.people_outline, size: 16, color: AppColors.grey400),
-              const SizedBox(height: 2),
-              Text(
-                '${campaign.followersCount}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text('متابع', style: theme.textTheme.bodySmall),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Text(label,
-              style: Theme.of(context).textTheme.bodyMedium),
-          const Spacer(),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UrgencyChip extends StatelessWidget {
-  const _UrgencyChip({required this.level});
-  final UrgencyLevel level;
-
-  @override
-  Widget build(BuildContext context) {
-    Color bg;
-    String label;
-    switch (level) {
-      case UrgencyLevel.high:
-        bg = AppColors.urgencyHigh;
-        label = 'عاجل';
-        break;
-      case UrgencyLevel.medium:
-        bg = AppColors.urgencyMedium;
-        label = 'متوسط';
-        break;
-      case UrgencyLevel.low:
-        bg = AppColors.urgencyLow;
-        label = 'عادي';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+          color: isDark ? const Color(0xFF2D3748) : AppColors.grey100,
         ),
       ),
+      child: Column(
+        children: rows.asMap().entries.map((entry) {
+          final i = entry.key;
+          final (icon, label, value) = entry.value;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(icon, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Text(label, style: theme.textTheme.bodyMedium),
+                    const Spacer(),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < rows.length - 1)
+                const Divider(height: 1, indent: 44),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 }
+
+// ─── Status Chip ───────────────────────────────────────────────────────────
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.campaign});
+  final CampaignModel campaign;
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    IconData icon;
+    switch (campaign.status) {
+      case CampaignStatus.sponsored:
+        color = AppColors.success;
+        icon = Icons.verified_rounded;
+        break;
+      case CampaignStatus.inProgress:
+        color = AppColors.info;
+        icon = Icons.play_circle_rounded;
+        break;
+      case CampaignStatus.resolved:
+        color = AppColors.success;
+        icon = Icons.check_circle_rounded;
+        break;
+      case CampaignStatus.available:
+        color = AppColors.primary;
+        icon = Icons.favorite_outline_rounded;
+        break;
+      default:
+        color = AppColors.warning;
+        icon = Icons.pending_rounded;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            campaign.statusLabel,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Update Item ───────────────────────────────────────────────────────────
 
 class _UpdateItem extends StatelessWidget {
   const _UpdateItem({required this.update});
@@ -493,46 +547,73 @@ class _UpdateItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-            Container(width: 2, height: 60, color: AppColors.grey200),
-          ],
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                update.content,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _formatDate(update.createdAt),
-                style: theme.textTheme.bodySmall,
-              ),
-              const SizedBox(height: 16),
-            ],
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2D3748) : AppColors.grey100,
           ),
         ),
-      ],
-    );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (update.imageUrl != null)
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  topRight: Radius.circular(14),
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: update.imageUrl!,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    update.content,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(height: 1.6),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded,
+                          size: 13, color: AppColors.grey400),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatDate(update.createdAt),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.05, duration: 300.ms);
   }
 
   String _formatDate(DateTime dt) {
     final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 30) {
+      return '${dt.day}/${dt.month}/${dt.year}';
+    }
     if (diff.inDays > 0) return 'منذ ${diff.inDays} يوم';
     if (diff.inHours > 0) return 'منذ ${diff.inHours} ساعة';
     return 'منذ قليل';

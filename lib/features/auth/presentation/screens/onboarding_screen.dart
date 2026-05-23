@@ -163,8 +163,8 @@ class _OnboardingPageView extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                page.color.withOpacity(0.15),
-                page.color.withOpacity(0.05),
+                page.color.withValues(alpha: 0.15),
+                page.color.withValues(alpha: 0.05),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -175,7 +175,7 @@ class _OnboardingPageView extends StatelessWidget {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                color: page.color.withOpacity(0.12),
+                color: page.color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -183,7 +183,7 @@ class _OnboardingPageView extends StatelessWidget {
                   width: 110,
                   height: 110,
                   decoration: BoxDecoration(
-                    color: page.color.withOpacity(0.2),
+                    color: page.color.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

@@ -61,16 +61,16 @@ class OrgNotificationsScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: isUnread
                             ? (isDark
-                                ? AppColors.primary.withOpacity(0.12)
+                                ? AppColors.primary.withValues(alpha: 0.12)
                                 : AppColors.primaryContainer
-                                    .withOpacity(0.5))
+                                    .withValues(alpha: 0.5))
                             : (isDark
                                 ? AppColors.surfaceDark
                                 : AppColors.white),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isUnread
-                              ? AppColors.primary.withOpacity(0.3)
+                              ? AppColors.primary.withValues(alpha: 0.3)
                               : (isDark
                                   ? const Color(0xFF2D3748)
                                   : AppColors.grey100),
@@ -84,7 +84,7 @@ class OrgNotificationsScreen extends ConsumerWidget {
                             height: 42,
                             decoration: BoxDecoration(
                               color: isUnread
-                                  ? AppColors.primary.withOpacity(0.15)
+                                  ? AppColors.primary.withValues(alpha: 0.15)
                                   : AppColors.grey100,
                               shape: BoxShape.circle,
                             ),

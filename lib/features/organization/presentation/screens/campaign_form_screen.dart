@@ -30,6 +30,8 @@ class _CampaignFormScreenState extends ConsumerState<CampaignFormScreen> {
   final _locationCtrl = TextEditingController();
   final _personNameCtrl = TextEditingController();
   final _personAgeCtrl = TextEditingController();
+  final _goalAmountCtrl = TextEditingController();
+  final _monthlyAmountCtrl = TextEditingController();
 
   CampaignCategory _category = CampaignCategory.other;
   UrgencyLevel _urgency = UrgencyLevel.medium;
@@ -56,6 +58,8 @@ class _CampaignFormScreenState extends ConsumerState<CampaignFormScreen> {
     _locationCtrl.dispose();
     _personNameCtrl.dispose();
     _personAgeCtrl.dispose();
+    _goalAmountCtrl.dispose();
+    _monthlyAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -116,6 +120,12 @@ class _CampaignFormScreenState extends ConsumerState<CampaignFormScreen> {
             ? int.tryParse(_personAgeCtrl.text)
             : null,
         personName: _isKafala ? _personNameCtrl.text.trim() : null,
+        goalAmount: !_isKafala && _goalAmountCtrl.text.isNotEmpty
+            ? double.tryParse(_goalAmountCtrl.text)
+            : null,
+        monthlyAmount: _isKafala && _monthlyAmountCtrl.text.isNotEmpty
+            ? double.tryParse(_monthlyAmountCtrl.text)
+            : null,
       );
     }
 
@@ -196,6 +206,16 @@ class _CampaignFormScreenState extends ConsumerState<CampaignFormScreen> {
                 textInputAction: TextInputAction.next,
                 prefixIcon: const Icon(Icons.cake_outlined, size: 20),
               ),
+              const SizedBox(height: 14),
+              // ─── Monthly amount for kafala ───────────────────────
+              AppTextField(
+                label: 'مبلغ الكفالة الشهرية (ريال)',
+                hint: 'مثال: 500',
+                controller: _monthlyAmountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.next,
+                prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+              ),
               const SizedBox(height: 24),
             ],
 
@@ -243,6 +263,19 @@ class _CampaignFormScreenState extends ConsumerState<CampaignFormScreen> {
               prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
             ),
             const SizedBox(height: 16),
+
+            // ─── Goal amount (campaigns only) ──────────────────────
+            if (!_isKafala) ...[
+              AppTextField(
+                label: 'المبلغ المستهدف (ريال)',
+                hint: 'مثال: 10000',
+                controller: _goalAmountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.next,
+                prefixIcon: const Icon(Icons.track_changes_rounded, size: 20),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ─── Needs (hidden for kafala) ─────────────────────────
             if (!_isKafala) ...[

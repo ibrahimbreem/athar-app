@@ -22,6 +22,7 @@ import '../../features/organization/presentation/screens/campaign_management_scr
 import '../../features/organization/presentation/screens/campaign_form_screen.dart';
 import '../../features/organization/presentation/screens/org_updates_screen.dart';
 import '../../features/organization/presentation/screens/org_settings_screen.dart';
+import '../../features/organization/presentation/screens/org_requests_screen.dart';
 import '../../models/user_model.dart';
 
 class RouterNotifier extends ChangeNotifier {
@@ -132,6 +133,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/campaign/:id/intent',
         builder: (_, state) =>
             DonationIntentScreen(campaignId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/org/requests',
+        builder: (_, __) => const OrgRequestsScreen(),
       ),
       GoRoute(
         path: '/org/campaign/add',

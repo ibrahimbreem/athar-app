@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../models/campaign_model.dart';
+import '../../../../models/donation_record_model.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -65,6 +66,15 @@ final savedCampaignsProvider =
   return _firestore.getSavedCampaigns(user.savedCases);
 });
 
+// ─── Followed Cases ───────────────────────────────────────────────────────────
+
+final followedCasesProvider =
+    FutureProvider<List<CampaignModel>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null || user.followedCases.isEmpty) return [];
+  return _firestore.getSavedCampaigns(user.followedCases);
+});
+
 // ─── Save/Unsave Actions ──────────────────────────────────────────────────────
 
 final campaignActionsProvider =
@@ -98,3 +108,11 @@ class CampaignActionsNotifier extends StateNotifier<AsyncValue<void>> {
     return user?.savedCases.contains(campaignId) ?? false;
   }
 }
+
+// ─── Donor Donation History ───────────────────────────────────────────────────
+
+final donorDonationsProvider = StreamProvider<List<DonationRecord>>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return const Stream.empty();
+  return _firestore.getDonorDonations(user.id);
+});

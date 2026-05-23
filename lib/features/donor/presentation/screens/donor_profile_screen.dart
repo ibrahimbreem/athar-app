@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'donor_edit_profile_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/extensions/context_extensions.dart';
-import '../../../../shared/widgets/campaign_card.dart';
+import '../../../../models/donation_record_model.dart';
+import '../../../../shared/widgets/kafala_card.dart';
 import '../providers/campaigns_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -44,26 +46,58 @@ class DonorProfileScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      backgroundColor:
+          isDark ? theme.scaffoldBackgroundColor : const Color(0xFFF8FAF8),
       body: CustomScrollView(
         slivers: [
-          // ─── Header ─────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.heroGradient,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
+          // ─── App Bar ───────────────────────────────────────────────
+          SliverAppBar(
+            pinned: true,
+            backgroundColor:
+                isDark ? AppColors.surfaceDark : Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 1,
+            shadowColor: Colors.black.withValues(alpha: 0.08),
+            title: const Text(
+              'ملفي الشخصي',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            centerTitle: true,
+            leading: IconButton(
+              icon: Icon(
+                Icons.settings_outlined,
+                color: isDark ? Colors.white70 : AppColors.grey600,
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const DonorEditProfileScreen(),
                 ),
               ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                  child: Column(
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_outlined,
+                  color: isDark ? Colors.white70 : AppColors.grey600,
+                ),
+                onPressed: () {},
+              ),
+            ],
+          ),
+
+          // ─── Profile Header ────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Container(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                children: [
+                  // Avatar with edit button
+                  Stack(
                     children: [
                       CircleAvatar(
-                        radius: 45,
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        radius: 48,
+                        backgroundColor: AppColors.primaryContainer,
                         backgroundImage: user.photoUrl != null
                             ? CachedNetworkImageProvider(user.photoUrl!)
                             : null,
@@ -75,85 +109,206 @@ class DonorProfileScreen extends ConsumerWidget {
                                 style: const TextStyle(
                                   fontSize: 36,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: AppColors.primary,
                                 ),
                               )
                             : null,
-                      ).animate().scale(
-                            duration: 500.ms,
-                            curve: Curves.elasticOut,
-                          ),
-                      const SizedBox(height: 12),
-                      Text(
-                        user.fullName,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ).animate(delay: 100.ms).fadeIn(),
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email,
-                        style:
-                            const TextStyle(color: Colors.white70, fontSize: 13),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _StatChip(
-                            label: 'حالات متابَعة',
-                            value: '${user.followedCases.length}',
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const DonorEditProfileScreen(),
+                            ),
                           ),
-                          const SizedBox(width: 16),
-                          _StatChip(
-                            label: 'حالات محفوظة',
-                            value: '${user.savedCases.length}',
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.edit_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ).animate().scale(
+                        duration: 500.ms,
+                        curve: Curves.elasticOut,
+                      ),
+                  const SizedBox(height: 12),
+                  Text(
+                    user.fullName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ).animate(delay: 100.ms).fadeIn(),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.favorite_rounded,
+                            size: 13, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'متبرع',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Stats row
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1E293B)
+                          : const Color(0xFFF1F5F1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        _StatItem(
+                          value:
+                              '${user.followedCases.length + user.savedCases.length}',
+                          label: 'إجمالي الحالات',
+                        ),
+                        _VertDivider(),
+                        _StatItem(
+                          value: '${user.followedCases.length}',
+                          label: 'الحالات المكفولة',
+                        ),
+                        _VertDivider(),
+                        _StatItem(
+                          value: '${user.savedCases.length}',
+                          label: 'الحالات المتاحة',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+          // ─── Impact Card ───────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF16A34A), Color(0xFF15803D)],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.eco_rounded,
+                        color: Colors.white, size: 32),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'تأثيرك يستمر',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'شكراً لكونك سبباً في تغيير حياة طفل',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-          // ─── Saved Campaigns ──────────────────────────────────────
+          // ─── Donation History ──────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Text(
-                AppStrings.savedCases,
-                style: theme.textTheme.titleLarge
+                'سجل تبرعاتك',
+                style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          _SavedCampaignsSection(),
+          const _DonationHistorySection(),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+          // ─── Followed Cases ────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text(
+                'الحالات التي تتابعها',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+          _FollowedCasesSection(),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
           // ─── Settings ─────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Text(
                 'الإعدادات',
-                style: theme.textTheme.titleLarge
+                style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surfaceDark : AppColors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark
                         ? const Color(0xFF2D3748)
@@ -165,7 +320,11 @@ class DonorProfileScreen extends ConsumerWidget {
                     _SettingsTile(
                       icon: Icons.person_outline_rounded,
                       label: AppStrings.editProfile,
-                      onTap: () {},
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DonorEditProfileScreen(),
+                        ),
+                      ),
                     ),
                     _Divider(),
                     _SettingsTile(
@@ -176,7 +335,7 @@ class DonorProfileScreen extends ConsumerWidget {
                       trailing: Switch(
                         value: isDarkMode,
                         onChanged: (_) => themeNotifier.toggle(),
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                       ),
                       onTap: () => themeNotifier.toggle(),
                     ),
@@ -209,7 +368,7 @@ class DonorProfileScreen extends ConsumerWidget {
           // ─── Logout ───────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton.icon(
                 onPressed: () async {
                   final confirm = await context.showConfirmDialog(
@@ -219,8 +378,9 @@ class DonorProfileScreen extends ConsumerWidget {
                     isDestructive: true,
                   );
                   if (confirm == true && context.mounted) {
-                    await ref.read(authProvider.notifier).signOut();
-                    context.go('/role-selection');
+                    final notifier = ref.read(authProvider.notifier);
+                    await notifier.signOut();
+                    if (context.mounted) context.go('/role-selection');
                   }
                 },
                 icon: const Icon(Icons.logout_rounded, color: AppColors.error),
@@ -242,32 +402,33 @@ class DonorProfileScreen extends ConsumerWidget {
   }
 }
 
-class _SavedCampaignsSection extends ConsumerWidget {
+// ─── Followed Cases Section ───────────────────────────────────────────────
+
+class _FollowedCasesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final saved = ref.watch(savedCampaignsProvider);
-    final actions = ref.watch(campaignActionsProvider.notifier);
+    final followed = ref.watch(followedCasesProvider);
 
-    return saved.when(
-      data: (campaigns) => campaigns.isEmpty
+    return followed.when(
+      data: (cases) => cases.isEmpty
           ? SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: AppColors.grey50,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.bookmark_border,
+                      Icon(Icons.favorite_border_rounded,
                           color: AppColors.grey400),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          AppStrings.noSavedCampaignsDesc,
-                          style: const TextStyle(color: AppColors.grey500),
+                          'لا توجد حالات متابَعة حتى الآن',
+                          style: TextStyle(color: AppColors.grey500),
                         ),
                       ),
                     ],
@@ -275,23 +436,15 @@ class _SavedCampaignsSection extends ConsumerWidget {
                 ),
               ),
             )
-          : SliverToBoxAdapter(
-              child: SizedBox(
-                height: 280,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: campaigns.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 14),
-                  itemBuilder: (_, i) => SizedBox(
-                    width: 260,
-                    child: CampaignCard(
-                      campaign: campaigns[i],
-                      index: i,
-                      isSaved: true,
-                      onSave: () => actions.toggleSave(campaigns[i].id),
-                    ),
+          : SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: KafalaListCard(campaign: cases[i], index: i),
                   ),
+                  childCount: cases.length,
                 ),
               ),
             ),
@@ -304,38 +457,222 @@ class _SavedCampaignsSection extends ConsumerWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value});
-  final String label;
-  final String value;
+// ─── Donation History Section ─────────────────────────────────────────────
+
+class _DonationHistorySection extends ConsumerWidget {
+  const _DonationHistorySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final donations = ref.watch(donorDonationsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return donations.when(
+      data: (records) => records.isEmpty
+          ? SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : AppColors.grey50,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.receipt_long_outlined,
+                          color: AppColors.grey400),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'لا توجد تبرعات مسجلة حتى الآن',
+                          style: TextStyle(color: AppColors.grey500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => _DonationRecordTile(record: records[i], index: i),
+                  childCount: records.length,
+                ),
+              ),
+            ),
+      loading: () => const SliverToBoxAdapter(
+        child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
+      ),
+      error: (_, __) => const SliverToBoxAdapter(child: SizedBox()),
+    );
+  }
+}
+
+class _DonationRecordTile extends StatelessWidget {
+  const _DonationRecordTile({required this.record, required this.index});
+  final DonationRecord record;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isKafala = record.type == DonationType.kafala;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: Colors.white.withOpacity(0.3)),
+        color: isDark ? AppColors.surfaceDark : AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2D3748) : AppColors.grey100,
+        ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isKafala
+                  ? AppColors.primaryContainer
+                  : AppColors.success.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isKafala
+                  ? Icons.favorite_rounded
+                  : Icons.volunteer_activism_rounded,
+              size: 18,
+              color: isKafala ? AppColors.primary : AppColors.success,
             ),
           ),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.campaignTitle,
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isKafala
+                            ? AppColors.primaryContainer
+                            : AppColors.success.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isKafala ? 'كفالة' : 'حملة',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: isKafala
+                              ? AppColors.primaryDark
+                              : AppColors.success,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        record.orgName,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.grey400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${record.amount.toStringAsFixed(0)} ر.س',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: isKafala ? AppColors.primary : AppColors.success,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${record.createdAt.day}/${record.createdAt.month}/${record.createdAt.year}',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.grey400,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({required this.value, required this.label});
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: isDark ? Colors.white60 : AppColors.grey500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VertDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 36, color: AppColors.grey200);
   }
 }
 
@@ -355,7 +692,7 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -380,7 +717,5 @@ class _SettingsTile extends StatelessWidget {
 
 class _Divider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    return const Divider(height: 1, indent: 50);
-  }
+  Widget build(BuildContext context) => const Divider(height: 1, indent: 50);
 }

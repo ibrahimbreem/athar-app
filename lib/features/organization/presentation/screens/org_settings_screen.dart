@@ -267,7 +267,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                       value: isDarkMode,
                       onChanged: (_) =>
                           ref.read(themeModeProvider.notifier).toggle(),
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                     ),
                   ),
                   const Divider(height: 1),

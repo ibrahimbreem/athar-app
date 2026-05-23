@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../models/donor_request_model.dart';
+import '../../../../models/notification_model.dart';
+import '../../../../services/firebase_auth_service.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -54,7 +57,22 @@ class _DonationIntentScreenState extends ConsumerState<DonationIntentScreen> {
         updatedAt: DateTime.now(),
       );
 
-      await FirestoreService().createDonorRequest(request);
+      final requestId = await FirestoreService().createDonorRequest(request);
+
+      // Notify the organization
+      await FirestoreService().sendInAppNotification(
+        userId: needyUserId,
+        title: 'طلب متابعة جديد 🤝',
+        body: 'أبدى ${user.fullName} اهتماماً بحالة "$caseTitle"',
+        type: NotificationType.donationRequest,
+        campaignId: widget.campaignId,
+        requestId: requestId,
+      );
+
+      // Add campaign to donor's followed list
+      await FirebaseAuthService().updateUserData(user.id, {
+        'followedCases': FieldValue.arrayUnion([widget.campaignId]),
+      });
 
       if (mounted) setState(() => _sent = true);
     } catch (e) {
@@ -105,7 +123,7 @@ class _DonationIntentScreenState extends ConsumerState<DonationIntentScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
