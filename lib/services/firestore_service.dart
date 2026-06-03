@@ -293,6 +293,51 @@ class FirestoreService {
     };
   }
 
+  // ─── Case Updates ─────────────────────────────────────────────────────────
+
+  /// Appends a new update entry to a campaign's updates array.
+  Future<void> addCampaignUpdate(
+      String campaignId, String content, String? imageUrl) async {
+    final update = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'content': content,
+      'imageUrl': imageUrl,
+      'createdAt': Timestamp.fromDate(DateTime.now()),
+    };
+    await _cases.doc(campaignId).update({
+      'updates': FieldValue.arrayUnion([update]),
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  /// Approves a follow request: adds campaign to donor's followedCases,
+  /// and for kafala sets status to sponsored + sponsorId/Name.
+  Future<void> approveCampaignFollow({
+    required String campaignId,
+    required String donorId,
+    required String donorName,
+  }) async {
+    await _users.doc(donorId).update({
+      'followedCases': FieldValue.arrayUnion([campaignId]),
+    });
+
+    final campaign = await getCampaignById(campaignId);
+    if (campaign != null && campaign.isKafala) {
+      await _cases.doc(campaignId).update({
+        'status': CampaignStatus.sponsored.name,
+        'sponsorId': donorId,
+        'sponsorName': donorName,
+        'followersCount': FieldValue.increment(1),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } else {
+      await _cases.doc(campaignId).update({
+        'followersCount': FieldValue.increment(1),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    }
+  }
+
   // ─── Donations & Kafala Payments ─────────────────────────────────────────
 
   /// Records a campaign donation: saves to donations collection + increments collectedAmount.

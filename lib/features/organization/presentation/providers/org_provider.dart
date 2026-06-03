@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../models/campaign_model.dart';
 import '../../../../models/donation_record_model.dart';
 import '../../../../models/donor_request_model.dart';
+import '../../../../models/notification_model.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../../services/storage_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -267,6 +268,56 @@ class RecordDonationNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       await _firestore.recordKafalaPayment(record);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, s) {
+      state = AsyncValue.error(e, s);
+      return false;
+    }
+  }
+}
+
+// ─── Case Update ─────────────────────────────────────────────────────────────
+
+final addCaseUpdateProvider =
+    StateNotifierProvider.autoDispose<AddCaseUpdateNotifier, AsyncValue<void>>(
+  (ref) => AddCaseUpdateNotifier(ref),
+);
+
+class AddCaseUpdateNotifier extends StateNotifier<AsyncValue<void>> {
+  AddCaseUpdateNotifier(this._ref) : super(const AsyncValue.data(null));
+  final Ref _ref;
+
+  Future<bool> addUpdate({
+    required String campaignId,
+    required String content,
+    File? imageFile,
+    String? sponsorId,
+    String? campaignTitle,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = _ref.read(currentUserProvider);
+      if (user == null) throw Exception('غير مسجل الدخول');
+
+      String? imageUrl;
+      if (imageFile != null) {
+        final urls = await _storage.uploadMultipleImages([imageFile], user.id);
+        if (urls.isNotEmpty) imageUrl = urls.first;
+      }
+
+      await _firestore.addCampaignUpdate(campaignId, content, imageUrl);
+
+      if (sponsorId != null && campaignTitle != null) {
+        await _firestore.sendInAppNotification(
+          userId: sponsorId,
+          title: 'تحديث جديد على الحالة 📸',
+          body: 'تم نشر تحديث جديد على حالة "$campaignTitle"',
+          type: NotificationType.campaignUpdate,
+          campaignId: campaignId,
+        );
+      }
+
       state = const AsyncValue.data(null);
       return true;
     } catch (e, s) {

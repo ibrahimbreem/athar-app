@@ -15,8 +15,8 @@ class KafalaListScreen extends ConsumerStatefulWidget {
 }
 
 class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
-  // null = all, false = available, true = sponsored
-  bool? _showSponsored;
+  // false = available only (default for donors)
+  bool? _showSponsored = false;
   String _search = '';
   final _searchCtrl = TextEditingController();
 
@@ -105,30 +105,24 @@ class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Status filter tabs
-                  Row(
-                    children: [
-                      _FilterTab(
-                        label: 'الكل',
-                        isSelected: _showSponsored == null,
-                        onTap: () =>
-                            setState(() => _showSponsored = null),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterTab(
-                        label: 'مكفول',
-                        isSelected: _showSponsored == true,
-                        onTap: () =>
-                            setState(() => _showSponsored = true),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterTab(
-                        label: 'متاح للكفالة',
-                        isSelected: _showSponsored == false,
-                        onTap: () =>
-                            setState(() => _showSponsored = false),
-                      ),
-                    ],
+                  // Type filter tabs
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _FilterTab(
+                          label: 'الكل',
+                          isSelected: _showSponsored == null,
+                          onTap: () => setState(() => _showSponsored = null),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterTab(
+                          label: 'متاح للكفالة',
+                          isSelected: _showSponsored == false,
+                          onTap: () => setState(() => _showSponsored = false),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

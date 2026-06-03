@@ -140,7 +140,11 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
       await FirestoreService().updateRequestStatus(widget.request.id, status, note);
 
       if (status == RequestStatus.approved) {
-        await FirestoreService().incrementFollowersCount(widget.request.campaignId);
+        await FirestoreService().approveCampaignFollow(
+          campaignId: widget.request.campaignId,
+          donorId: widget.request.donorId,
+          donorName: widget.request.donorName,
+        );
       }
 
       final isApproved = status == RequestStatus.approved;

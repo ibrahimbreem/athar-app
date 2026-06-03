@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +6,6 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../models/donor_request_model.dart';
 import '../../../../models/notification_model.dart';
-import '../../../../services/firebase_auth_service.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -68,11 +66,6 @@ class _DonationIntentScreenState extends ConsumerState<DonationIntentScreen> {
         campaignId: widget.campaignId,
         requestId: requestId,
       );
-
-      // Add campaign to donor's followed list
-      await FirebaseAuthService().updateUserData(user.id, {
-        'followedCases': FieldValue.arrayUnion([widget.campaignId]),
-      });
 
       if (mounted) setState(() => _sent = true);
     } catch (e) {
@@ -230,13 +223,6 @@ class _DonationIntentScreenState extends ConsumerState<DonationIntentScreen> {
                   isLoading: _isLoading,
                   icon: Icons.favorite_outline_rounded,
                 ),
-                const SizedBox(height: 12),
-                AppButton(
-                  label: AppStrings.contactNow,
-                  onPressed: () {},
-                  variant: ButtonVariant.outlined,
-                  icon: Icons.chat_bubble_outline_rounded,
-                ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -375,20 +361,20 @@ class _SuccessView extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Text(
-            'تمت المتابعة!',
+            'سيتم مراجعة طلبك',
             style: theme.textTheme.headlineMedium
                 ?.copyWith(fontWeight: FontWeight.w800),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 14),
           Text(
-            AppStrings.followSent,
+            'تم إرسال طلبك للجمعية بنجاح',
             style: theme.textTheme.bodyLarge?.copyWith(height: 1.7),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            'ستصلك تحديثات الحالة وسيتواصل معك صاحبها قريباً',
+            'ستتلقى إشعاراً فور موافقة الجمعية على طلبك',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),

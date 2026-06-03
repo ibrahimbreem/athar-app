@@ -370,7 +370,7 @@ class CampaignDetailsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          bottomNavigationBar: user != null
+          bottomNavigationBar: (user != null && user.isDonor)
               ? SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),

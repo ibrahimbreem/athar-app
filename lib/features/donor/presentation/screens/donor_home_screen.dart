@@ -238,7 +238,7 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
                           title: 'لا توجد حالات كفالة متاحة',
                         )
                       : SizedBox(
-                          height: 340,
+                          height: 395,
                           child: ListView.separated(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 20),
@@ -253,7 +253,7 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
                           ),
                         ),
                   loading: () => const SizedBox(
-                    height: 340,
+                    height: 395,
                     child: Center(
                       child: CircularProgressIndicator(
                           color: AppColors.primary),

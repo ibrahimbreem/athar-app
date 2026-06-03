@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -157,8 +159,12 @@ class _CampaignManagementScreenState
                     icon: Icons.cases_outlined,
                     title: AppStrings.noCampaigns,
                     description: AppStrings.noCampaignsDesc,
-                    action: () => context.push('/org/campaign/add'),
-                    actionLabel: AppStrings.addCase,
+                    action: _filterSponsored != true
+                        ? () => context.push('/org/campaign/add')
+                        : null,
+                    actionLabel: _filterSponsored != true
+                        ? AppStrings.addCase
+                        : null,
                   ),
                 );
               }
@@ -191,11 +197,11 @@ class _CampaignManagementScreenState
                             }
                           }
                         },
-                        onRecord: () => showModalBottomSheet(
+                        onUpdate: () => showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) => _RecordDonationSheet(
+                          builder: (_) => _UpdateCaseSheet(
                             campaign: filtered[i],
                           ),
                         ),
@@ -242,13 +248,13 @@ class _CaseTile extends StatelessWidget {
     required this.campaign,
     required this.index,
     required this.onDelete,
-    required this.onRecord,
+    required this.onUpdate,
   });
 
   final CampaignModel campaign;
   final int index;
   final VoidCallback onDelete;
-  final VoidCallback onRecord;
+  final VoidCallback onUpdate;
 
   @override
   Widget build(BuildContext context) {
@@ -388,12 +394,10 @@ class _CaseTile extends StatelessWidget {
               ),
               _VLine(),
               _ActionBtn(
-                icon: campaign.isKafala
-                    ? Icons.payments_outlined
-                    : Icons.add_circle_outline_rounded,
-                label: campaign.isKafala ? 'دفعة' : 'تبرع',
-                color: AppColors.success,
-                onTap: onRecord,
+                icon: Icons.update_rounded,
+                label: 'تحديث',
+                color: AppColors.primary,
+                onTap: onUpdate,
               ),
             ],
           ),
@@ -528,7 +532,11 @@ class _StatusBadge extends StatelessWidget {
         color = AppColors.warning;
         label = 'مراجعة';
         break;
-      default:
+      case CampaignStatus.verified:
+        color = AppColors.info;
+        label = 'موثقة';
+        break;
+      case CampaignStatus.closed:
         color = AppColors.grey400;
         label = 'مغلق';
     }
@@ -551,77 +559,53 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ─── Record Donation / Payment Bottom Sheet ────────────────────────────────
+// ─── Update Case Bottom Sheet ──────────────────────────────────────────────
 
-class _RecordDonationSheet extends ConsumerStatefulWidget {
-  const _RecordDonationSheet({required this.campaign});
+class _UpdateCaseSheet extends ConsumerStatefulWidget {
+  const _UpdateCaseSheet({required this.campaign});
   final CampaignModel campaign;
 
   @override
-  ConsumerState<_RecordDonationSheet> createState() =>
-      _RecordDonationSheetState();
+  ConsumerState<_UpdateCaseSheet> createState() => _UpdateCaseSheetState();
 }
 
-class _RecordDonationSheetState extends ConsumerState<_RecordDonationSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _amountCtrl = TextEditingController();
-  final _donorNameCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.campaign.isKafala && widget.campaign.monthlyAmount != null) {
-      _amountCtrl.text = widget.campaign.monthlyAmount!.toStringAsFixed(0);
-    }
-    if (widget.campaign.isKafala && widget.campaign.sponsorName != null) {
-      _donorNameCtrl.text = widget.campaign.sponsorName!;
-    }
-  }
+class _UpdateCaseSheetState extends ConsumerState<_UpdateCaseSheet> {
+  final _captionCtrl = TextEditingController();
+  File? _image;
 
   @override
   void dispose() {
-    _amountCtrl.dispose();
-    _donorNameCtrl.dispose();
-    _noteCtrl.dispose();
+    _captionCtrl.dispose();
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) setState(() => _image = File(picked.path));
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final amount = double.tryParse(_amountCtrl.text.trim());
-    if (amount == null || amount <= 0) return;
+    final caption = _captionCtrl.text.trim();
+    if (caption.isEmpty && _image == null) return;
 
-    final notifier = ref.read(recordDonationProvider.notifier);
-    bool ok;
-
-    if (widget.campaign.isKafala) {
-      ok = await notifier.recordKafalaPayment(
-        campaign: widget.campaign,
-        amount: amount,
-        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-      );
-    } else {
-      ok = await notifier.recordCampaignDonation(
-        campaign: widget.campaign,
-        donorName: _donorNameCtrl.text.trim(),
-        amount: amount,
-        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-      );
-    }
+    final ok = await ref.read(addCaseUpdateProvider.notifier).addUpdate(
+          campaignId: widget.campaign.id,
+          content: caption.isNotEmpty ? caption : 'تحديث جديد',
+          imageFile: _image,
+          sponsorId: widget.campaign.sponsorId,
+          campaignTitle: widget.campaign.title,
+        );
 
     if (!mounted) return;
     if (ok) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.campaign.isKafala
-            ? 'تم تسجيل الدفعة وإرسال إشعار للكفيل ✅'
-            : 'تم تسجيل التبرع وتحديث المبلغ المجموع ✅'),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('تم نشر التحديث ✅'),
         backgroundColor: AppColors.success,
       ));
     } else {
-      final err =
-          ref.read(recordDonationProvider).error?.toString() ?? '';
+      final err = ref.read(addCaseUpdateProvider).error?.toString() ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(err), backgroundColor: AppColors.error),
       );
@@ -632,7 +616,7 @@ class _RecordDonationSheetState extends ConsumerState<_RecordDonationSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isLoading = ref.watch(recordDonationProvider).isLoading;
+    final isLoading = ref.watch(addCaseUpdateProvider).isLoading;
 
     return Container(
       decoration: BoxDecoration(
@@ -641,167 +625,115 @@ class _RecordDonationSheetState extends ConsumerState<_RecordDonationSheet> {
       ),
       padding: EdgeInsets.fromLTRB(
           20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.grey200,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.grey200,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    widget.campaign.isKafala
-                        ? Icons.payments_outlined
-                        : Icons.add_circle_outline_rounded,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.campaign.isKafala
-                            ? 'تسجيل دفعة كفالة'
-                            : 'تسجيل تبرع',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        widget.campaign.needyName,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.grey500),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Sponsor info (kafala - read only)
-            if (widget.campaign.isKafala &&
-                widget.campaign.sponsorName != null) ...[
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
                   color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
+                child: const Icon(Icons.update_rounded,
+                    size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.person_outline,
-                        size: 18, color: AppColors.primary),
-                    const SizedBox(width: 8),
                     Text(
-                      'الكفيل: ${widget.campaign.sponsorName}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDark,
-                      ),
+                      'نشر تحديث',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      widget.campaign.needyName,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: AppColors.grey500),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
             ],
+          ),
+          const SizedBox(height: 20),
 
-            // Donor name (campaigns only)
-            if (!widget.campaign.isKafala) ...[
-              TextFormField(
-                controller: _donorNameCtrl,
-                decoration: InputDecoration(
-                  labelText: 'اسم المتبرع',
-                  prefixIcon:
-                      const Icon(Icons.person_outline, size: 20),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: isDark
-                      ? const Color(0xFF1E293B)
-                      : const Color(0xFFF8FAF8),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
-              ),
-              const SizedBox(height: 14),
-            ],
-
-            // Amount
-            TextFormField(
-              controller: _amountCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'المبلغ (ريال)',
-                prefixIcon: const Icon(Icons.monetization_on_outlined,
-                    size: 20),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: isDark
+          // Image picker
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              width: double.infinity,
+              height: 130,
+              decoration: BoxDecoration(
+                color: isDark
                     ? const Color(0xFF1E293B)
-                    : const Color(0xFFF8FAF8),
+                    : const Color(0xFFF1F5F1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.grey200),
               ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'مطلوب';
-                if (double.tryParse(v) == null) {
-                  return 'أدخل رقماً صحيحاً';
-                }
-                return null;
-              },
+              child: _image != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(_image!, fit: BoxFit.cover),
+                    )
+                  : const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate_outlined,
+                            size: 36, color: AppColors.grey400),
+                        SizedBox(height: 6),
+                        Text(
+                          'إضافة صورة (اختياري)',
+                          style: TextStyle(
+                              fontSize: 12, color: AppColors.grey400),
+                        ),
+                      ],
+                    ),
             ),
-            const SizedBox(height: 14),
+          ),
+          const SizedBox(height: 14),
 
-            // Note
-            TextFormField(
-              controller: _noteCtrl,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'ملاحظة (اختياري)',
-                prefixIcon:
-                    const Icon(Icons.notes_rounded, size: 20),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: isDark
-                    ? const Color(0xFF1E293B)
-                    : const Color(0xFFF8FAF8),
-              ),
+          // Caption
+          TextField(
+            controller: _captionCtrl,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: 'نص التحديث',
+              hintText: 'اكتب وصفاً للتحديث...',
+              prefixIcon: const Icon(Icons.notes_rounded, size: 20),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: isDark
+                  ? const Color(0xFF1E293B)
+                  : const Color(0xFFF8FAF8),
             ),
-            const SizedBox(height: 20),
+          ),
+          const SizedBox(height: 20),
 
-            AppButton(
-              label: widget.campaign.isKafala
-                  ? 'تسجيل الدفعة'
-                  : 'تسجيل التبرع',
-              onPressed: _submit,
-              isLoading: isLoading,
-              icon: Icons.check_circle_outline_rounded,
-            ),
-          ],
-        ),
+          AppButton(
+            label: 'نشر التحديث',
+            onPressed: _submit,
+            isLoading: isLoading,
+            icon: Icons.send_rounded,
+          ),
+        ],
       ),
     );
   }
