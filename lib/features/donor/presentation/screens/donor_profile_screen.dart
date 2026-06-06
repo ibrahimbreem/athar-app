@@ -175,35 +175,42 @@ class DonorProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Stats row
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1E293B)
-                          : const Color(0xFFF1F5F1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        _StatItem(
-                          value:
-                              '${user.followedCases.length + user.savedCases.length}',
-                          label: 'إجمالي الحالات',
-                        ),
-                        _VertDivider(),
-                        _StatItem(
-                          value: '${user.followedCases.length}',
-                          label: 'الحالات المكفولة',
-                        ),
-                        _VertDivider(),
-                        _StatItem(
-                          value: '${user.savedCases.length}',
-                          label: 'الحالات المتاحة',
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Stats row — followedCount from live stream for accuracy
+                  Builder(builder: (context) {
+                    final followedCount = ref
+                            .watch(followedCasesProvider)
+                            .value
+                            ?.length ??
+                        user.followedCases.length;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFF1F5F1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          _StatItem(
+                            value:
+                                '${followedCount + user.savedCases.length}',
+                            label: 'إجمالي الحالات',
+                          ),
+                          _VertDivider(),
+                          _StatItem(
+                            value: '$followedCount',
+                            label: 'الحالات المكفولة',
+                          ),
+                          _VertDivider(),
+                          _StatItem(
+                            value: '${user.savedCases.length}',
+                            label: 'الحالات المتاحة',
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),

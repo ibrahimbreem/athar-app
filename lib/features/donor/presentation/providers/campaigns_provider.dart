@@ -67,12 +67,18 @@ final savedCampaignsProvider =
 });
 
 // ─── Followed Cases ───────────────────────────────────────────────────────────
+// StreamProvider so that org-approved followedCases appear immediately
+// without requiring the donor to re-login.
 
-final followedCasesProvider =
-    FutureProvider<List<CampaignModel>>((ref) async {
+final followedCasesProvider = StreamProvider<List<CampaignModel>>((ref) {
   final user = ref.watch(currentUserProvider);
-  if (user == null || user.followedCases.isEmpty) return [];
-  return _firestore.getSavedCampaigns(user.followedCases);
+  if (user == null) return const Stream.empty();
+  return _firestore.watchUserDocument(user.id).asyncMap((freshUser) async {
+    if (freshUser == null || freshUser.followedCases.isEmpty) {
+      return <CampaignModel>[];
+    }
+    return _firestore.getSavedCampaigns(freshUser.followedCases);
+  });
 });
 
 // ─── Save/Unsave Actions ──────────────────────────────────────────────────────

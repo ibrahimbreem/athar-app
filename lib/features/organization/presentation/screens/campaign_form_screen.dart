@@ -7,6 +7,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../models/campaign_model.dart';
+import '../../../../services/firestore_service.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -38,15 +39,46 @@ class _CampaignFormScreenState extends ConsumerState<CampaignFormScreen> {
   List<File> _newImages = [];
   List<String> _existingImageUrls = [];
 
-  // Kafala toggle
-  bool _isKafala = false;
+  // Kafala toggle — default to kafala since that's the primary use case
+  bool _isKafala = true;
   KafalaType? _kafalaType;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(campaignFormProvider.notifier).reset();
+      if (widget.isEdit) {
+        final campaign =
+            await FirestoreService().getCampaignById(widget.campaignId!);
+        if (campaign != null && mounted) {
+          setState(() {
+            _titleCtrl.text = campaign.title;
+            _descCtrl.text = campaign.description;
+            _needsCtrl.text = campaign.needs ?? '';
+            _locationCtrl.text = campaign.location ?? '';
+            _category = campaign.category;
+            _urgency = campaign.urgencyLevel;
+            _existingImageUrls = List.from(campaign.imageUrls);
+            _isKafala = campaign.isKafala;
+            _kafalaType = campaign.kafalaType;
+            if (campaign.personAge != null) {
+              _personAgeCtrl.text = campaign.personAge.toString();
+            }
+            if (campaign.isKafala) {
+              _personNameCtrl.text = campaign.needyName;
+            }
+            if (campaign.goalAmount != null) {
+              _goalAmountCtrl.text =
+                  campaign.goalAmount!.toStringAsFixed(0);
+            }
+            if (campaign.monthlyAmount != null) {
+              _monthlyAmountCtrl.text =
+                  campaign.monthlyAmount!.toStringAsFixed(0);
+            }
+          });
+        }
+      }
     });
   }
 
@@ -380,7 +412,7 @@ class _CaseTypeToggle extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'حالة عادية',
+                    'حملة',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,

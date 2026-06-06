@@ -34,9 +34,8 @@ class FirestoreService {
       // Org sees all their own cases
       query = query.where('needyUserId', isEqualTo: organizationId);
     } else {
-      // Donor feed: show verified, inProgress, and available cases
-      query = query.where('status',
-          whereIn: ['verified', 'inProgress', 'available']);
+      // Donor feed: only regular campaigns (kafala cases use 'available' status)
+      query = query.where('status', whereIn: ['verified', 'inProgress']);
     }
 
     if (category != null) {
@@ -122,18 +121,16 @@ class FirestoreService {
   // ─── Kafala Cases ─────────────────────────────────────────────────────────
 
   Stream<List<CampaignModel>> getKafalaCases({KafalaType? kafalaType}) {
-    // Only kafala cases use 'available' / 'sponsored' statuses,
-    // so filtering by status is sufficient — avoids the invalid
-    // isNull: false + whereIn combination that Firestore forbids.
+    // Only show 'available' cases — sponsored cases are already taken
+    // and should not appear in the donor's kafala feed.
     Query query;
 
     if (kafalaType != null) {
       query = _cases
           .where('kafalaType', isEqualTo: kafalaType.name)
-          .where('status', whereIn: ['available', 'sponsored']);
+          .where('status', isEqualTo: 'available');
     } else {
-      query = _cases
-          .where('status', whereIn: ['available', 'sponsored']);
+      query = _cases.where('status', isEqualTo: 'available');
     }
 
     return query
@@ -142,6 +139,13 @@ class FirestoreService {
         .snapshots()
         .map((snap) =>
             snap.docs.map((d) => CampaignModel.fromFirestore(d)).toList());
+  }
+
+  Stream<UserModel?> watchUserDocument(String userId) {
+    return _users.doc(userId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return UserModel.fromFirestore(doc);
+    });
   }
 
   // ─── Saved Cases ──────────────────────────────────────────────────────────
@@ -278,6 +282,12 @@ class FirestoreService {
     final pending = all.docs
         .where((d) => (d.data() as Map)['status'] == 'pending')
         .length;
+    final available = all.docs
+        .where((d) => (d.data() as Map)['status'] == 'available')
+        .length;
+    final sponsored = all.docs
+        .where((d) => (d.data() as Map)['status'] == 'sponsored')
+        .length;
 
     final pendingFollows = await _follows
         .where('organizationId', isEqualTo: needyUserId)
@@ -290,6 +300,8 @@ class FirestoreService {
       'completed': resolved,
       'pending': pending,
       'pendingRequests': pendingFollows.docs.length,
+      'available': available,
+      'sponsored': sponsored,
     };
   }
 

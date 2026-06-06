@@ -15,8 +15,6 @@ class KafalaListScreen extends ConsumerStatefulWidget {
 }
 
 class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
-  // false = available only (default for donors)
-  bool? _showSponsored = false;
   String _search = '';
   final _searchCtrl = TextEditingController();
 
@@ -104,26 +102,6 @@ class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  // Type filter tabs
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _FilterTab(
-                          label: 'الكل',
-                          isSelected: _showSponsored == null,
-                          onTap: () => setState(() => _showSponsored = null),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterTab(
-                          label: 'متاح للكفالة',
-                          isSelected: _showSponsored == false,
-                          onTap: () => setState(() => _showSponsored = false),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -139,9 +117,8 @@ class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
                 return const SliverFillRemaining(
                   child: EmptyState(
                     icon: Icons.people_outline,
-                    title: 'لا توجد حالات',
-                    description:
-                        'جرب تغيير الفلتر للعثور على حالات كفالة',
+                    title: 'لا توجد حالات كفالة متاحة',
+                    description: 'جميع الحالات مكفولة حالياً، تحقق لاحقاً',
                   ),
                 );
               }
@@ -178,53 +155,13 @@ class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
   }
 
   List<CampaignModel> _filter(List<CampaignModel> cases) {
-    var list = cases;
-    if (_showSponsored != null) {
-      list = list.where((c) => c.isSponsored == _showSponsored).toList();
-    }
-    if (_search.trim().isNotEmpty) {
-      final q = _search.toLowerCase();
-      list = list
-          .where((c) =>
-              c.title.toLowerCase().contains(q) ||
-              c.needyName.toLowerCase().contains(q))
-          .toList();
-    }
-    return list;
+    if (_search.trim().isEmpty) return cases;
+    final q = _search.toLowerCase();
+    return cases
+        .where((c) =>
+            c.title.toLowerCase().contains(q) ||
+            c.needyName.toLowerCase().contains(q))
+        .toList();
   }
 }
 
-class _FilterTab extends StatelessWidget {
-  const _FilterTab({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.grey100,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.grey600,
-          ),
-        ),
-      ),
-    );
-  }
-}

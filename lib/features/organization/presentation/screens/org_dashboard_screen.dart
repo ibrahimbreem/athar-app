@@ -102,14 +102,14 @@ class OrgDashboardScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 10),
                           _StatCard(
-                            value: '${s['pendingRequests'] ?? 0}',
+                            value: '${s['sponsored'] ?? 0}',
                             label: 'الحالات\nالمكفولة',
                             color: AppColors.success,
                             index: 1,
                           ),
                           const SizedBox(width: 10),
                           _StatCard(
-                            value: '${s['active'] ?? 0}',
+                            value: '${s['available'] ?? 0}',
                             label: 'المتاحة',
                             color: AppColors.info,
                             index: 2,
