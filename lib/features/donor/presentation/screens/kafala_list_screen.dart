@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../models/campaign_model.dart';
@@ -50,15 +51,7 @@ class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             centerTitle: true,
-            actions: [
-              IconButton(
-                icon: Icon(
-                  Icons.notifications_outlined,
-                  color: isDark ? Colors.white70 : AppColors.grey600,
-                ),
-                onPressed: () {},
-              ),
-            ],
+            actions: [_NotificationBell()],
           ),
 
           // ─── Search + Filters ──────────────────────────────────────
@@ -162,6 +155,24 @@ class _KafalaListScreenState extends ConsumerState<KafalaListScreen> {
             c.title.toLowerCase().contains(q) ||
             c.needyName.toLowerCase().contains(q))
         .toList();
+  }
+}
+
+class _NotificationBell extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final count = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+    return IconButton(
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text(count > 9 ? '9+' : '$count',
+            style: const TextStyle(fontSize: 10)),
+        child: Icon(Icons.notifications_outlined,
+            color: isDark ? Colors.white70 : AppColors.grey600),
+      ),
+      onPressed: () => context.push('/donor/notifications'),
+    );
   }
 }
 

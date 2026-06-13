@@ -88,13 +88,7 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.notifications_outlined,
-              color: isDark ? Colors.white70 : AppColors.grey600,
-            ),
-            onPressed: () {},
-          ),
+          _NotificationBell(),
         ],
       ),
       body: RefreshIndicator(
@@ -510,6 +504,31 @@ class _SearchResults extends ConsumerWidget {
         child: CampaignsSkeletonList(),
       ),
       error: (_, __) => const SliverFillRemaining(child: SizedBox()),
+    );
+  }
+}
+
+// ─── Notification Bell with Badge ─────────────────────────────────────────────
+
+class _NotificationBell extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final count = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+
+    return IconButton(
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text(
+          count > 9 ? '9+' : '$count',
+          style: const TextStyle(fontSize: 10),
+        ),
+        child: Icon(
+          Icons.notifications_outlined,
+          color: isDark ? Colors.white70 : AppColors.grey600,
+        ),
+      ),
+      onPressed: () => context.push('/donor/notifications'),
     );
   }
 }

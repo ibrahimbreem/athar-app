@@ -122,3 +122,13 @@ final donorDonationsProvider = StreamProvider<List<DonationRecord>>((ref) {
   if (user == null) return const Stream.empty();
   return _firestore.getDonorDonations(user.id);
 });
+
+// ─── Unread Notifications Count ───────────────────────────────────────────────
+
+final unreadNotificationsCountProvider = StreamProvider<int>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return const Stream.empty();
+  return _firestore
+      .getNotifications(user.id)
+      .map((list) => list.where((n) => !n.isRead).length);
+});
